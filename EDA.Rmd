@@ -1,0 +1,379 @@
+---
+#title: "Poland Used Cars EDA"
+#author: "Nahid Gulaliyev Student Nr: 429195" "Yenish Nurmuhammedov Student Nr:381864"
+#date: "16/01/2022"
+#output: html_document:
+#    df_print: paged
+#  pdf_document:
+#    fig_caption: yes
+
+#header-includes:
+  - \usepackage{draftwatermark}
+---
+"Poland Used Cars EDA" 
+=======================
+Author: 
+============================
+"Nahid Gulaliyev Student Nr: 429195" 
+"Yenish Nurmuhammedov Student Nr:381864"
+==============================================================================
+
+ Abstract
+===================
+Our main aim is to analyze polish people's buying behaviour towards cars that sold in Poland from 2000 until 2021 such as types of cars, preferred colours, engine type, fuel type and average price that people tend to buy cars. Based on mentioned features we are able to conclude and have a result about people's buying behaviour and years that they started to buy more cars.
+
+The code used to collect and clean the data is available at github: github.com/pt3k/otomoto-webscrape
+
+
+ About Data
+===================
+This dataset was created by webscraping over 200,000 car offers from one of the largest car advertisement sites in Poland.
+
+Variables describtion:
+ID - unique ID of offer
+Price - value of the price
+Currency - currency of the price (mostly polish złoty, but also some euro)
+Condition - new or used
+Vehicle_brand - brand of vehicle in offer
+Vehicle_model - model of vehicle in offer
+Vehicle_generation - generation of vehicle in offer
+Vehicle_version - version of vehicle in offer
+Production_year - year of car production
+Mileage_km - total distance that the car has driven in kilometers
+Power_HP - car engine power in horsepower
+Displacement_cm3 - car engine size in cubic centimeters
+Fuel_type - car fuel type
+CO2_emissions - car CO2 emissions in g/km
+Drive - type of car drive
+Transmission - type of car transmission
+Type - car body style
+Colour - car body color
+Origin_country - country of origin of the car
+First_owner - whether the owner is the first owner
+First_registration_date - date of first registration
+Offer_publication_date - date of publication of the offer
+Offer_location - address provided by the issuer
+Features - listed car features (ABS, airbag, parking sensors e.t.c)
+```{r, echo = FALSE}
+
+library(ggplot2)
+library(dplyr)
+library(scales)
+setwd("C:\\Users\\yenis\\Desktop\\R. vis\\Project idea\\R_Project\\Used Cars")
+df = read.csv("Car_sale_ads.csv")
+```
+
+
+
+
+Checking NA Values
+
+```{r, echo = FALSE,results='hide'}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+```
+
+
+```{r, echo = FALSE,results='hide'}
+colSums(is.na(df))
+```
+
+
+Converting Blank Values into NA
+```{r, echo = FALSE}
+df[df==""] <- NA
+```
+
+
+Dataframe Dimensions
+
+```{r, echo = FALSE}
+dim(df)
+```
+
+Dropping Columns which contains higher NA Values
+
+```{r, echo = FALSE}
+drops <- c("CO2_emissions","Index","Vehicle_version","First_owner", "First_registration_date",'vehicle_brand')
+df <- df[ , !(names(df) %in% drops)]
+```
+
+
+Excluding NA Values from the Dataframe
+```{r, echo = FALSE}
+df <- na.exclude (df)
+```
+
+
+```{r, echo = FALSE}
+temp_df <- as.data.frame(table(df$Vehicle_brand))
+temp_df <- temp_df[order(-temp_df$Freq),][ 1:10,]
+```
+
+
+
+\newpage
+
+Here In top 10 models Opel,Audi and Volkswagon are the top 3 models cars has
+higher frequency. 
+
+```{r, echo = FALSE}
+p<-ggplot(data=temp_df, aes(y=Freq, x=Var1,fill = Var1)) +
+  geom_bar(stat="identity")+
+  geom_text(aes(label=Freq), vjust=-0.3, size=3.5)+
+  theme_minimal()+
+  xlab("Model") +
+  ylab("Frequency") +
+  ggtitle("Top 10 Model")+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  
+p
+```
+
+The data is left skewed where most of the cars produced in the year of
+between 2010 to 2020.
+
+```{r, echo = FALSE}
+ggplot(df,mapping = aes(x=df$Production_year)) + geom_histogram(aes(y = ..density..),colour="black", fill="gray",bins = 30)+labs(title = "Production Year Frequency",y = 'Frequency', x = "Year")+xlim(c(1980,2022))
+```
+
+
+
+
+
+There is slightly positive relation between the Displacement and the Power HP.
+
+```{r, echo = FALSE}
+# Establish the base layer
+plt_mpg_vs_wt <- ggplot(df, aes(Displacement_cm3, Power_HP))
+
+# Map fcyl to size
+plt_mpg_vs_wt +
+  geom_point()+
+  ggtitle("Displacement vs PowerHP")
+```
+
+From the Below graph we can say that the Black color cars are most likely and
+most frequent as compares to others. Whereas the Yellow is least interested color
+in the cars.
+
+```{r, echo = FALSE}
+ggplot(data=df, aes(y=Colour,fill = Colour)) +
+geom_bar() +
+geom_text(stat='count', aes(label=..count..), vjust=-1)+ggtitle("Colour Distribution")
+```
+
+```{r, echo = FALSE}
+plot_data <- df %>% 
+  count(Condition, Fuel_type, Transmission) %>% 
+  group_by(Transmission, Fuel_type) %>% 
+  mutate(percent = n/sum(n))
+```
+
+
+From the below graphs we could say that the there is no new Gasoline and CNG
+cars.
+
+```{r, echo = FALSE}
+ggplot(plot_data, aes(x = Fuel_type, y = percent, fill = Condition)) + 
+  geom_col(position = "fill") + 
+  geom_label(aes(label = percent(percent)), position = "fill", color = "white", vjust = 1, show.legend = FALSE) +
+  scale_y_continuous(labels = percent) +
+  facet_grid(~Transmission)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+ggtitle("Fuel type Frequency With Transmission and Condition")
+```
+
+
+```{r, echo = FALSE}
+theme_set(theme_bw())
+ggplot(df, aes(x = Displacement_cm3, fill = Fuel_type)) +
+    geom_histogram(bins = 25) +ggtitle("Displacement with Fuel Type")
+```
+There are Most of the cars has Diesel and Gasoline Fuel type Where as Hybrid and
+
+Gasoline cng and Gasoline LPG has least frequency.
+
+
+```{r, echo = FALSE}
+temp <- df %>% group_by(Fuel_type) %>% summarise(cou = n())
+temp$per <- temp$cou/sum(temp$cou)
+# Create a basic bar
+pie = ggplot(temp, aes(x="", y=per, fill=Fuel_type)) + geom_bar(stat="identity", width=1)
+ 
+# Convert to pie (polar coordinates) and add labels
+pie = pie + coord_polar("y", start=0) + geom_text(aes(label = paste0(round(per*100), "%")), position = position_stack(vjust = 0.5))
+ 
+# Add color scale (hex colors)
+pie = pie + scale_fill_manual(values=c("#55DDE0", "#33658A", "#2F4858", "#F6AE2D", "#F26419")) 
+ 
+# Remove labels and add title
+pie = pie + labs(x = NULL, y = NULL, fill = NULL, title = "Pie Chart of Fuel type")
+ 
+# Tidy up the theme
+pie = pie + theme_classic() + theme(axis.line = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          plot.title = element_text(hjust = 0.5, color = "#666666"))
+
+pie
+
+```
+
+Here we could see the relation between the fuel type and Price as Hybrid has the
+
+maximum average price and Gasoline LPG and Gasoline CNG has least average price.
+
+
+```{r, echo = FALSE}
+library(scales)
+theme_set(theme_classic())
+
+fuel <- aggregate(df$Price, by=list(df$Fuel_type), FUN=mean)  # aggregate
+colnames(fuel) <- c("Fuel_type", "Price")  # change column names
+fuel <- fuel[order(fuel$Price), ]  # sort
+fuel$Fuel_type <- factor(fuel$Fuel_type, levels = fuel$Fuel_type)
+
+# Plot
+ggplot(fuel, aes(x=Fuel_type, y=Price)) + 
+  geom_point(col="tomato2", size=3) +   # Draw points
+  geom_segment(aes(x=Fuel_type, 
+                   xend=Fuel_type, 
+                   y=min(Price), 
+                   yend=max(Price)), 
+               linetype="dashed", 
+               size=0.1) +   # Draw dashed lines
+  labs(title="Fuel type Vs Price") +  
+  coord_flip()
+
+```
+
+Here 4*4 attached has highest average price as compare to others with the 
+cost of 143374 and Front Wheels has the least cost of 41241.25.
+
+
+```{r, echo = FALSE}
+temp <- df %>% group_by(Drive) %>% summarise(price = round(mean(Price),2))
+
+g <- ggplot(temp, aes(Drive, price))
+g + geom_bar(stat="identity", width = 0.5, fill="tomato2") + 
+      labs(title="Drive Vs Price") +
+      theme(axis.text.x = element_text(angle=90, vjust=0.6))+geom_text( aes(label=price), vjust=-1)+ylim(c(0,200000))
+  
+```
+
+As there is no relation between the Price and the Mileage Kilometer. and as we
+
+could check the distribution of Mileage and Price on the top and right side of
+
+the Graph.
+Price is highle Skewed as compare to the Mileage Km.
+
+```{r, echo = FALSE}
+library(ggExtra)
+library(ggplot2)
+theme_set(theme_bw()) 
+
+g <- ggplot(df, aes(Price, Mileage_km)) + 
+  geom_count() + 
+  geom_smooth(method="lm", se=F)+labs(title = "Price Vs Mileage")
+ggMarginal(g, type = "density", fill="transparent")
+
+```
+
+There is No relation between the Price and the Power HP.Where as Power HP is
+
+high left skewed.
+
+
+```{r, echo = FALSE}
+g <- ggplot(df, aes(Price,Power_HP)) + 
+  geom_count() + 
+  geom_smooth(method="lm", se=F)+labs(title = "Price Vs Power_HP")
+
+ggMarginal(g, type = "density", fill="transparent")
+```
+
+There is no relation between the Price and the Displacement CM.
+
+```{r, echo = FALSE}
+g <- ggplot(df, aes(Price, Displacement_cm3)) + 
+  geom_count() + 
+  geom_smooth(method="lm", se=T)+labs(title = "Price Vs Displacement_cm3")
+
+ggMarginal(g, type = "density", fill="transparent")
+
+```
+
+
+
+
+White colour Cars has the highest average price and black has 65922 average
+price.
+Silver has the least cost as 36550.
+
+```{r, echo = FALSE}
+temp_df <- df %>% group_by(Colour) %>% summarise(price = round(mean(Price),2))
+ggplot(temp_df, aes(x=Colour, y=price)) + 
+  geom_point(size=3) + 
+  geom_segment(aes(x=Colour, 
+                   xend=Colour, 
+                   y=0, 
+                   yend=price)) + 
+  labs(title="Colour Vs Price") + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6))+geom_text( aes(label=price), vjust=-1)+ylim(c(0,100000))
+```
+
+Coupe and SUV has the highest price and City cars and Small cars has the lowest
+price .
+
+```{r, echo = FALSE}
+
+fuel <- aggregate(df$Price, by=list(df$Type), FUN=mean)  # aggregate
+colnames(fuel) <- c("Type", "Price")  # change column names
+fuel <- fuel[order(fuel$Price), ]  # sort
+fuel$Type <- factor(fuel$Type, levels = fuel$Type)
+
+# Plot
+ggplot(fuel, aes(x=Type, y=Price)) + 
+  geom_point(col="tomato2", size=3) +   # Draw points
+  geom_segment(aes(x=Type, 
+                   xend=Type, 
+                   y=min(Price), 
+                   yend=max(Price)), 
+               linetype="dashed", 
+               size=0.1) +   # Draw dashed lines
+  labs(title="Type Vs Price") +  
+  coord_flip()
+```
+
+Most of the cars are belong to the Used category in the Condition category.
+
+```{r, echo = FALSE}
+temp <- df %>% group_by(Condition) %>% summarise(cou = n())
+temp$per <- temp$cou/sum(temp$cou)
+# Create a basic bar
+pie = ggplot(temp, aes(x="", y=per, fill=Condition)) + geom_bar(stat="identity", width=1)
+ 
+# Convert to pie (polar coordinates) and add labels
+pie = pie + coord_polar("y", start=0) + geom_text(aes(label = paste0(round(per*100), "%")), position = position_stack(vjust = 0.5))
+ 
+# Add color scale (hex colors)
+pie = pie + scale_fill_manual(values=c("#55DDE0", "#33658A", "#2F4858", "#F6AE2D", "#F26419")) 
+ 
+# Remove labels and add title
+pie = pie + labs(x = NULL, y = NULL, fill = NULL, title = "Pie Chart of Condition")
+ 
+# Tidy up the theme
+pie = pie + theme_classic() + theme(axis.line = element_blank(),
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          plot.title = element_text(hjust = 0.5, color = "#666666"))
+
+pie
+
+```
+
+Summary
+===========
+From top 10 model graph wMosee that people were buying brands of Opel, Audi, Volkswagen mostly alongside with BMW and Ford and mostly cars sold starting from 2010. From displacement and powerHP we saw there is slight positive relation as affect consumer buying behaviour with more powerhp and engine strength people tend to buy. From colour distribution we see that people are prone to buy mainly black coloured cars(20599).In fuel types frequency for all types of fuels mainly used cars bought.In terms of fuel types mostly bought diesel and gasoline as they have averagely less price compare to hybrid. The other fuel types such as gasoline with CNG or LPG is not often use, and from pie chart also we were able to see that 94% of used fuel types are gasoline and diesel.In terms of prices of fuels, hybrid has the highest price while diesel and gasoline priced averagely.Car types in terms of their structure, 4x4 attached ones are the most expensive ones averagely compare to front wheels and rear wheels.There is no relationship between price and mileage, price and displacement, while has slightly positive relation between price and powerHP as determined by consumer buying behaviour.From graph of colour vs price now we see that white colour has the highest price(74803.71 pln) compare to other colours, while black colour price is average as 65922.8 pln and this is why people mainly buy black coloured cars. As types of cars, Coupe and SUV type of cars have the highest price while small cars and city cars are with the lowest price and people usually buy cheaper ones. From last pie chart, comparing conditions of cars, we see that people are tend to buy mainly used(92%) and the least(8%) new cars.
+
+
+As a result, we can say that in order to enter into polish car market, car industry companies should analyze average income of families in Poland and sell new cars with affordable prices which has no extremely better features compare to other cars.If we were a car company, based on results that we got we would produce small city cars mostly which has affordable price, and features also is not very low and from Polish population's buying intentions also seemed that they do like mostly small city cars compare to jeeps.
+
