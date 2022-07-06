@@ -1,0 +1,83 @@
+
+```{r,echo=FALSE}
+setwd("C:\\Users\\yenis\\Desktop\\DSBA\\2 semester\\ML\\ML Project")
+Car_sale_ads <- read.csv("Car_sale_ads.csv")
+head(Car_sale_ads)
+```
+
+```{r,echo=FALSE}
+tail(Car_sale_ads)
+```
+
+
+```{r,echo=FALSE}
+index <- sample(1:nrow(Car_sale_ads))
+head(index)
+```
+
+```{r,echo=FALSE}
+Car_sale_ads <- Car_sale_ads[index, ]
+head(Car_sale_ads)
+```
+
+
+```{r,echo=FALSE}
+library(dplyr)
+# Drop variables
+#clean_Cars <- Car_sale_ads % > %
+#select(-c(Price, Vehicle_brand, Mileage_km,Fuel_type, Production_year))
+#Convert to factor level
+	mutate(pclass = factor(pclass, levels = c(1, 2, 3), labels = c('Upper', 'Middle', 'Lower')),
+	Condition = factor(Condition, levels = c(0, 1), labels = c('No', 'Yes'))) % > %
+na.omit()
+glimpse(clean_Cars)
+```
+
+
+```{r,echo=FALSE}
+library(rpart)
+library(rpart.plot)
+fit <- rpart(Vehicle_brand~., data = Car_sale_ads, method = 'class')
+rpart.plot(Price, extra = 106
+          
+```
+
+
+
+```{r,echo=FALSE}
+titanic <- titanic[shuffle_index, ]
+head(titanic)
+```
+
+
+```{r,echo=FALSE}
+titanic <- titanic[shuffle_index, ]
+head(titanic)
+```
+
+
+```{r,echo=FALSE}
+titanic <- titanic[shuffle_index, ]
+head(titanic)
+```
+
+
+```{r,echo=FALSE}
+titanic <- titanic[shuffle_index, ]
+head(titanic)
+```
+
+
+```{r,echo=FALSE}
+titanic <- titanic[shuffle_index, ]
+head(titanic)
+```
+
+
+
+
+
+
+
+
+

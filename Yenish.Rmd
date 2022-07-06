@@ -1,0 +1,399 @@
+---
+#title: "Prediction of Automobile price using by Regression Model"
+#author: "Nahid Gulaliyev Student Nr: 429195" & "Yenish Nurmuhammedov Student Nr:381864"
+#output:
+#  html_document:
+#    df_print: paged
+#  pdf_document:
+#    fig_caption: yes
+---
+
+\centering
+
+\raggedright
+
+\abstract
+
+# Prediction of Automobile price using by Regression Model
+Author: 
+Nahid Gulaliyev Student Nr: 429195 & Yenish Nurmuhammedov Student Nr:381864
+
+
+# Introduction
+
+In this analysis, we will try to understand each variable and its effect on the dependent variable. A predictive model will be created using linear regression and try to estimate the performance of the linear regression model using RMSE, Rˆ2 and other metrics.
+This analysis is broken into two parts. i.e data analysis and predictive modelling. In data analysis all the 24 features will be analyzed along with their relationship to the dependent variable.
+
+# About Data
+This dataset was created by webscraping over 200,000 car offers from one of the largest car advertisement sites in Poland.
+The code used to collect and clean the data is available at github: github.com/pt3k/otomoto-webscrape
+The dataset contains 208,304 observations of 25 variables.
+Variables describtion:
+ID - unique ID of offer
+Price - value of the price
+Currency - currency of the price (mostly polish złoty, but also some euro)
+Condition - new or used
+Vehicle_brand - brand of vehicle in offer
+Vehicle_model - model of vehicle in offer
+Vehicle_generation - generation of vehicle in offer
+Vehicle_version - version of vehicle in offer
+Production_year - year of car production
+Mileage_km - total distance that the car has driven in kilometers
+Power_HP - car engine power in horsepower
+Displacement_cm3 - car engine size in cubic centimeters
+Fuel_type - car fuel type
+CO2_emissions - car CO2 emissions in g/km
+Drive - type of car drive
+Transmission - type of car transmission
+Type - car body style
+Doors_number - number of car doors
+Colour - car body color
+Origin_country - country of origin of the car
+First_owner - whether the owner is the first owner
+First_registration_date - date of first registration
+Offer_publication_date - date of publication of the offer
+Offer_location - address provided by the issuer
+Features - listed car features (ABS, airbag, parking sensors e.t.c)
+
+# Objective of the Study 
+In this Analysis we will try to find how each variable is affecting the output i.e price and using these variables how we can create predictive model.
+
+# Overview used data 
+The Data consist of 208,304 observations of 25 variables. out of which there are 24 independent variables and one is dependent variable. 
+we can see the head of the data below: 
+
+
+```{r,echo=FALSE}
+setwd("C:\\Users\\yenis\\Desktop\\DSBA\\2 semester\\ML\\ML Project")
+Car_sale_ads <- read.csv("Car_sale_ads.csv")
+```
+
+```{r,echo=FALSE}
+head(Car_sale_ads)
+```
+
+Our data is a mix of numeric, categorical, text and date fields 
+we can view the data structure below: 
+
+```{r,echo=FALSE}
+str(Car_sale_ads)
+```
+
+# Data Analysis 
+As the data is been divided into 208304 rows and 25 columns. There is a necessity for understanding the data. 
+
+## Missing Data
+
+The percent of missing values in each of the columns is given below
+
+```{r,echo=FALSE}
+(colSums(is.na(Car_sale_ads))/208304)*100
+```
+
+Based on this we are excluding columns that have more than 30% missing values, ie
+Vehicle_version, Vehicle_generation, Origin_country, CO2_emissions, First_owner and First_registration_date
+
+
+```{r,echo=FALSE}
+cleanData = subset(Car_sale_ads, select = -c(Vehicle_version,Vehicle_generation,Origin_country,CO2_emissions,First_owner,First_registration_date) )
+```
+
+Now our data has 19 columns
+
+```{r,echo=FALSE}
+head(cleanData)
+```
+
+Now for the numeric columns (Mileage_km, Power_HP and Displacement_cm3), replacing the NAs by mean
+
+```{r,echo=FALSE}
+for(i in 7:10)
+{                                   
+  cleanData[ , i][is.na(cleanData[ , i])] <- mean(cleanData[ , i], na.rm = TRUE)
+}
+```
+
+For the categorical columns (Drive, Transmission, and Doors_number), removing the rows with NAs
+
+```{r,echo=FALSE}
+cleanData=na.omit(cleanData)
+```
+
+The resulting data frame has 192220 rows and 19 columns
+
+```{r,echo=FALSE}
+(colSums(is.na(cleanData))/208304)*100
+```
+
+
+## Data Transformation
+For the Price column, Multiplying the price into 4.5 for currency in euros so that all come to same scale, then dropping the currency column
+
+```{r,echo=FALSE}
+cleanData$Price= ifelse(cleanData$Currency == 'EUR',cleanData$Price*4.5, cleanData$Price)
+cleanData = subset(cleanData, select = -c(Currency))
+```
+
+Converting the Door_numbers to factor
+
+```{r,echo=FALSE}
+
+cleanData$Doors_number<-factor(cleanData$Doors_number)
+
+```
+
+
+Converting the Offer_publication_date to Date
+
+```{r,echo=FALSE}
+cleanData$Offer_publication_date<-as.Date(cleanData$Offer_publication_date,"%d/%m/%Y")
+```
+
+Removing columns Offer_Location and Features as they are text columns which we cannot use in linear regression
+
+```{r,echo=FALSE}
+cleanData = subset(cleanData, select = -c(Offer_location, Features))
+
+```
+
+Removing Index as that is a key column
+
+```{r,echo=FALSE}
+cleanData = subset(cleanData, select = -c(Index))
+
+```
+
+# Descriptive Analysis
+
+To understand our data better, lets see the summary statistics for all the numeric columns
+
+```{r,echo=FALSE}
+summary(Filter(is.numeric, cleanData))
+```
+
+
+And the frequency table of all the categorical data
+
+```{r,echo=FALSE}
+summary(Filter(is.factor, cleanData))
+```
+
+
+Vehicle_Brand has more than 100 levels , so omitting  it from the data
+
+```{r,echo=FALSE}
+levels(cleanData$Vehicle_brand)
+```
+
+```{r,echo=FALSE}
+cleanData = subset(cleanData, select = -c(Vehicle_brand))
+```
+
+Vehicle_Brand has more than 1000 levels , so omitting  it from the data as creating so many dummy variables is not advisable
+
+```{r,echo=FALSE}
+levels(cleanData$Vehicle_model)
+cleanData = subset(cleanData, select = -c(Vehicle_model))
+```
+
+# Feature Analysis
+For all the numeric variables lets plot Scatter plots to see the relationship with the dependent variable
+
+## Price Vs Production Year
+No clear relationship is seen 
+
+```{r,echo=FALSE}
+plot(cleanData$Price, cleanData$Production_year, main="Scatterplot 1",
+     xlab="Price ", ylab="Production Year ", pch=19)
+```
+
+## Price vs Mileage_km
+No clear relationship is seen
+
+```{r}
+plot(cleanData$Price, cleanData$Mileage_km, main="Scatterplot 2",
+     xlab="Price ", ylab="Mileage ", pch=19)
+
+```
+
+##	Price vs Power_HP
+Slight relationship is hinted
+
+```{r,echo=FALSE}
+plot(cleanData$Price, cleanData$Power_HP, main="Scatterplot 3",
+     xlab="Price ", ylab="Power ", pch=19)
+```
+
+##	Price vs Displacement_cm3
+No clear relationship is seen
+
+```{r,echo=FALSE}
+plot(cleanData$Price, cleanData$Displacement_cm3, main="Scatterplot 4",
+     xlab="Price ", ylab="Displacement ", pch=19)
+```
+
+For all the categorical variables lets plot box plots to see the relationship with the dependent variable
+
+## Price vs Condition
+On an average the price is higher for new cars
+
+```{r,echo=FALSE}
+library(ggplot2)
+ggplot(aes(x= Condition,y=Price,fill=Condition), data = cleanData) + geom_boxplot() +  xlab("Condition") + ylab("Price")+ ggtitle("Condition vs Price")
+```
+
+## Price vs Fuel_Type
+There are 7 fuel types, Price seem to higher for Electric, Hybrid and Hydrogen
+
+```{r,echo=FALSE}
+ggplot(aes(x= Fuel_type,y=Price,fill=Fuel_type), data = cleanData) + geom_boxplot() +  xlab("Fuel Type") + ylab("Price")+ ggtitle("Fuel Type vs Price")
+```
+
+## Price vs Drive
+
+There are 5 drive types, Price don’t seem have a relationship with drive type
+
+```{r,echo=FALSE}
+ggplot(aes(x= Drive,y=Price,fill=Drive), data = cleanData) + geom_boxplot() +  xlab("Drive") + ylab("Price")+ ggtitle("Drive vs Price")
+```
+
+## Price vs Transmission 
+There are 2 types of transmissions but there seems to be no relation with price
+
+```{r,echo=FALSE}
+ggplot(aes(x= Transmission,y=Price,fill=Transmission), data = cleanData) + geom_boxplot() +  xlab("Transmission") + ylab("Price")+ ggtitle("Transmission vs Price")
+```
+
+## Price vs Type
+There are 9 levels on the Type variable but it does not seem to have any relationship
+
+```{r,echo=FALSE}
+ggplot(aes(x= Type,y=Price,fill=Type), data = cleanData) + geom_boxplot() +  xlab("Type") + ylab("Price")+ ggtitle("Type vs Price")
+```
+
+## Price vs Door_Numbers
+There are 10 classes in Door_number variable but there seems no relation with price
+
+```{r}
+ggplot(aes(x= Doors_number,y=Price,fill=Doors_number), data = cleanData) + geom_boxplot() +  xlab("Doors") + ylab("Price")+ ggtitle("Doors vs Price")
+```
+
+## Price vs Colours
+
+There are 14 colors but there seems to no relationship with price
+
+```{r}
+ggplot(aes(x= Colour,y=Price,fill=Colour), data = cleanData) + geom_boxplot() +  xlab("Colour") + ylab("Price")+ ggtitle("Colour vs Price")
+```
+
+# Predictive Modelling
+
+As per the above analysis the variable affecting the price have been found. The variables can be used 
+for model building. 
+
+## Data Preparation
+
+As most of the columns are not normally distributed. 
+There is a necessity for data preparation. there are many techniques to get the data to a normally 
+distributed form. One such techniques to get the data to normally distribution is the 
+
+## Data Transformation 
+There are multiple option to choose the data transformation. Out of which log transformation is one such technique which can reduce the skewness. Along with it there is a necessary to convert the column which are character to factor.
+```{r,echo=FALSE}
+cleanData$Price<- log(cleanData$Price)
+cleanData$Mileage_km <-log(cleanData$Mileage_km)
+cleanData$Power_HP<- log(cleanData$Power_HP)
+cleanData$Displacement_cm3<- log(cleanData$Displacement_cm3)
+
+cleanData = subset(cleanData, select = -c(Offer_publication_date))
+```
+
+## Data Split 
+The data has 192220 rows and these rows will be split to 70:30 ratio. 
+
+```{r,echo=FALSE}
+library(caret)
+car_dummy <- dummyVars(" ~ .", data = cleanData, fullRank = T)
+cleanData <- data.frame(predict(car_dummy, newdata = cleanData))
+```
+
+```{r,echo=FALSE}
+set.seed(123)
+trainIndex <- createDataPartition(cleanData$Price,p=0.70,list=FALSE)
+train <- cleanData[trainIndex,] 
+test <- cleanData[-trainIndex,]
+```
+
+## Modeling- Linear Regression 
+A linear model will be applied where in price is the y variable also known as dependent variable. 
+All the variables are been considered for the model. 
+
+```{r}
+lm_model <- lm(Price~.,data = train)
+summary(lm_model)
+```
+
+The significant variables are Condition, Mileage, Power, Displacement, Fuel Type, Type, Drive and Colour
+
+## Forward and Backward Linear Model Selection 
+We can select forward and backward section model in the process using stepAIC.
+
+```{r,echo=FALSE}
+library(MASS)
+lm_model_both <- stepAIC(lm_model,direction = "both")
+```
+
+
+
+Now the model is better than a linear model and the AIC is the lowest 148831. The lower the AIC better the model.
+
+# Random Forest Regression 
+We can also use some hybrid model which can take regression or classification out of which random 
+forest is one of the best 
+We take trees as 100 and mtry as 3 to choose a better accuracy. 
+
+```{r}
+library(randomForest)
+randomforest_model <- randomForest(Price~.,data = train,mtry = 3,ntree = 100)
+```
+
+# Model Performance Evaluation 
+Now the model will be predicted using the test data and the RMSE will be calculated. which can be 
+seen below 
+
+```{r}
+model_predict_lm <- predict.lm(lm_model,newdata =test)
+```
+
+```{r,echo=FALSE}
+model_predict_both<-predict.lm(lm_model_both,newdata =test)
+model_predict_randomForest <- predict(randomforest_model,newdata =test)
+```
+
+```{r,echo=FALSE}
+paste0("Linear Regression's RMSE",": ",RMSE(model_predict_lm,test$Price)) # Linear Regression
+```
+
+```{r,echo=FALSE}
+paste0("Forward and Backwards selection model's RMSE:"," ",RMSE(model_predict_both,test$Price)) # Linear Regression with forward and backward selection model
+
+```
+
+```{r,echo=FALSE}
+paste0("RandomForest's RMSE :"," ",RMSE(model_predict_randomForest,test$Price)) # Random Forest
+```
+
+
+# Conclusion 
+As per the model evaluation. I can be see that the model has the lowest RMSE is the best model. As 
+per the observation random forest has the lowest RMSE followed by linear model with forward and 
+backward selection model.
+
+# Reference 
+Data:https://www.kaggle.com/bartoszpieniak/poland-cars-for-sale-dataset 
+
+
+
+
+
+
